@@ -4,23 +4,26 @@ import (
 	"fmt"
 	"os"
 
-	"greq/internal/httpclient"
+	"github.com/TommyFiga/greq/internal/httpclient"
+	"github.com/TommyFiga/greq/internal/parser"
+	"github.com/TommyFiga/greq/internal/printer"
 )
 
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: greq <url>")
+	opts,err := parser.ParseArgs()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
-
-	url := os.Args[1]
 	
-	body, err := httpclient.SimpleGet(url)
+	resp, err := httpclient.SendRequest(opts.URL, opts.Method, opts.Headers, opts.Body)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println(body)
+	res := printer.FormatResponse(resp, opts.IncludeHeaders, opts.PrettyJSON)
+
+	fmt.Println(res)
 }
