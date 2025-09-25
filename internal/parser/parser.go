@@ -10,7 +10,7 @@ import (
 type Options struct {
 	URL            string
 	Method         string
-	Headers        map[string]string
+	Headers        map[string][]string
 	Body           string
 	IncludeHeaders bool
 	PrettyJSON     bool
@@ -46,14 +46,13 @@ func ParseArgs() (*Options, error) {
 	flag.Parse()
 
 	if flag.NArg() < 1 {
-		fmt.Fprintln(os.Stderr, "Usage: greq [options] <url>")
-		os.Exit(1)
+		return nil, fmt.Errorf("usage: greq [options] <url>")
 	}
 	url := flag.Arg(0)
 
-	headers := make(map[string]string)
+	headers := make(map[string][]string)
 	for _, h := range rawHeaders {
-		splitHeaders := strings.Split(h, ":")
+		splitHeaders := strings.SplitN(h, ":", 2)
 
 		if len(splitHeaders) != 2 {
 			fmt.Fprintf(os.Stderr, "WARNING: invalid header format, skipping: %s", h)
@@ -61,8 +60,9 @@ func ParseArgs() (*Options, error) {
 		}
 
 		key := strings.TrimSpace(splitHeaders[0])
-		val := strings.TrimSpace(splitHeaders[1])
-		headers[key] = val
+		vals := strings.TrimSpace(splitHeaders[1])
+		
+		headers[key] = append([]string(nil), vals)
 	}
 
 	return &Options{
