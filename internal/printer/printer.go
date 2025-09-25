@@ -1,19 +1,19 @@
 package printer
 
 import (
-	"fmt"
 	"encoding/json"
-	"io"
-	"net/http"
+	"fmt"
+	"os"
+
+	"github.com/TommyFiga/greq/internal/types"
 )
 
-func FormatResponse(resp *http.Response, includeHeaders bool, prettyJSON bool) string {
+func FormatResponse(resp *types.ResponseData , includeHeaders bool, prettyJSON bool) string {
 	fmtResp := ""
-
-	fmtResp += fmt.Sprintf("%s %s\n", resp.Proto, resp.Status)
+	fmtResp += fmt.Sprintf("%s %s\n", resp.Protocol, resp.Status)
 
 	if includeHeaders {
-		for key, values := range resp.Header {
+		for key, values := range resp.Headers {
 			fmtResp += (key + ": ")
 
 			for i, val := range values {
@@ -28,27 +28,24 @@ func FormatResponse(resp *http.Response, includeHeaders bool, prettyJSON bool) s
 		}
 	}
 
-	defer resp.Body.Close()
+	bodyBytes := resp.Body
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmtResp + "\n"
-	}
-
-	if prettyJSON && json.Valid(bodyBytes) {
+	if prettyJSON && json.Valid(resp.Body) {
 		var data interface{}
 
 		err := json.Unmarshal(bodyBytes, &data)
-		if err != nil {
-			// TODO			
-			return "" 
+		if err != nil {		
+			fmt.Fprintf(os.Stderr, "WARNING: failed to parse JSON for pretty-printing: %v\n", err)
+			return fmtResp + string(bodyBytes)
 		}
 
-		bodyBytes, err = json.MarshalIndent(&data, "", "  ")
+		indented, err := json.MarshalIndent(&data, "", "  ")
 		if err != nil {
-			// TODO			
-			return "" 
+			fmt.Fprintf(os.Stderr, "WARNING: failed to format JSON: %v\n", err)
+			return fmtResp + string(bodyBytes)
 		}
+
+		bodyBytes = indented
 	}
 
 	return fmtResp + string(bodyBytes)
