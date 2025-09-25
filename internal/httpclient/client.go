@@ -1,23 +1,17 @@
 package httpclient
 
 import (
+	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/TommyFiga/greq/internal/types"
 )
 
-func SimpleGet(url string) (*http.Response, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-func SendRequest(url string, method string, headers map[string]string, body string) (*http.Response, error) {
+func SendRequest(url string, method string, headers map[string][]string, body string) (*types.ResponseData, error) {
 	if method == "" {
-		return SimpleGet(url)
+		return SendRequest(url, "GET", nil, "")
 	}
 
 	req, err := http.NewRequest(method, url, strings.NewReader(body))
@@ -25,8 +19,10 @@ func SendRequest(url string, method string, headers map[string]string, body stri
 		return nil, err
 	}
 
-	for key, val := range headers {
-		req.Header.Set(key, val)
+	for key, vals := range headers {
+		for _, v := range vals {
+			req.Header.Set(key, v)
+		}
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -35,5 +31,26 @@ func SendRequest(url string, method string, headers map[string]string, body stri
 		return nil, err
 	}
 
-	return resp, nil
+	return getResponseData(resp)
+}
+
+func getResponseData(resp *http.Response) (*types.ResponseData, error) {
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := make(map[string][]string)
+	for key, val := range resp.Header {
+		headers[key] = append([]string(nil), val...)
+	}
+
+	return &types.ResponseData{
+		Protocol: resp.Proto,
+		Status:   resp.Status,
+		Headers:  headers,
+		Body:     bodyBytes,
+	}, nil
 }
