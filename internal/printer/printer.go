@@ -30,23 +30,23 @@ func FormatResponse(resp *types.ResponseData , includeHeaders bool, prettyJSON b
 
 	bodyBytes := resp.Body
 
-	if prettyJSON && json.Valid(resp.Body) {
-		var data interface{}
+	if prettyJSON {
+		var data any
 
 		err := json.Unmarshal(bodyBytes, &data)
 		if err != nil {		
-			fmt.Fprintf(os.Stderr, "WARNING: failed to parse JSON for pretty-printing: %v\n", err)
-			return fmtResp + string(bodyBytes)
+			fmt.Fprintf(os.Stdout, "WARNING: failed to parse JSON for pretty-printing\n")
+			return fmtResp + "\nData:\n" + string(bodyBytes)
 		}
 
 		indented, err := json.MarshalIndent(&data, "", "  ")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: failed to format JSON: %v\n", err)
-			return fmtResp + string(bodyBytes)
+			return fmtResp + "\nData:\n" + string(bodyBytes)
 		}
 
 		bodyBytes = indented
 	}
 
-	return fmtResp + string(bodyBytes)
+	return fmtResp + "\nData:\n" + string(bodyBytes)
 }
