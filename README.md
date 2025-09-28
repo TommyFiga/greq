@@ -67,3 +67,6 @@ greq --json https://httpbin.org/json
     ├── printer/      # Formatting and pretty-printing
     └── types/        # Shared data structures
 ```
+
+## License
+greq is released under the [MIT License](./LICENSE).
