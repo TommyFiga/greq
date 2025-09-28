@@ -62,7 +62,11 @@ func ParseArgs() (*Options, error) {
 		key := strings.TrimSpace(splitHeaders[0])
 		vals := strings.TrimSpace(splitHeaders[1])
 		
-		headers[key] = append([]string(nil), vals)
+		if headers[key] == nil {
+			headers[key] = append([]string(nil), vals)
+		} else {
+			headers[key] = append(headers[key], vals)
+		}
 	}
 
 	return &Options{
